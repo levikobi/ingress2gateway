@@ -34,6 +34,9 @@ import (
 )
 
 type PrintRunner struct {
+	// kubeConfigExplicitPath specifies the explicit location of the kube-config file.
+	kubeConfigExplicitPath string
+
 	// outputFormat contains currently set output format. Value assigned via --output/-o flag.
 	// Defaults to YAML.
 	outputFormat string
@@ -73,7 +76,7 @@ func (pr *PrintRunner) PrintGatewaysAndHTTPRoutes(cmd *cobra.Command, _ []string
 		return fmt.Errorf("failed to initialize namespace filter: %w", err)
 	}
 
-	httpRoutes, gateways, err := i2gw.ToGatewayAPIResources(cmd.Context(), pr.namespaceFilter, pr.inputFile, pr.providers)
+	httpRoutes, gateways, err := i2gw.ToGatewayAPIResources(cmd.Context(), pr.namespaceFilter, pr.inputFile, pr.providers, pr.kubeConfigExplicitPath)
 	if err != nil {
 		return err
 	}
@@ -138,7 +141,7 @@ func (pr *PrintRunner) initializeNamespaceFilter() error {
 
 	// If namespace flag is not specified, try to use the default namespace from the cluster
 	if pr.namespace == "" {
-		ns, err := getNamespaceInCurrentContext()
+		ns, err := getNamespaceInCurrentContext(pr.kubeConfigExplicitPath)
 		if err != nil && pr.inputFile == "" {
 			// When asked to read from the cluster, but getting the current namespace
 			// failed for whatever reason - do not process the request.
@@ -167,6 +170,9 @@ func newPrintCommand() *cobra.Command {
 		RunE:  pr.PrintGatewaysAndHTTPRoutes,
 	}
 
+	cmd.Flags().StringVar(&pr.kubeConfigExplicitPath, "kube-config", "",
+		fmt.Sprintf(`Explicit path to kubeconfig file`))
+
 	cmd.Flags().StringVarP(&pr.outputFormat, "output", "o", "yaml",
 		fmt.Sprintf(`Output format. One of: (%s)`, strings.Join(allowedFormats, ", ")))
 
@@ -188,8 +194,9 @@ if specified with --namespace.`)
 }
 
 // getNamespaceInCurrentContext returns the namespace in the current active context of the user.
-func getNamespaceInCurrentContext() (string, error) {
+func getNamespaceInCurrentContext(kubeConfigExplicitPath string) (string, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.ExplicitPath = kubeConfigExplicitPath
 
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	currentNamespace, _, err := kubeConfig.Namespace()

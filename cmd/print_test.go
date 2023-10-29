@@ -226,7 +226,7 @@ func Test_getNamespaceInCurrentContext(t *testing.T) {
 	defer destroy()
 
 	expectedNamespace := "non-default-ns" // according to the kube-config at setupKubeConfig()
-	actualNamespace, err := getNamespaceInCurrentContext()
+	actualNamespace, err := getNamespaceInCurrentContext("/Users/kobilevi/.kube/config-remote")
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
 	}

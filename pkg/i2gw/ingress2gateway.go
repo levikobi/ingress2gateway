@@ -34,8 +34,8 @@ import (
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string) ([]gatewayv1beta1.HTTPRoute, []gatewayv1beta1.Gateway, error) {
-	conf, err := config.GetConfig()
+func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string, kubeconfig string) ([]gatewayv1beta1.HTTPRoute, []gatewayv1beta1.Gateway, error) {
+	conf, err := config.GetConfigWithContext(kubeconfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get client config: %w", err)
 	}
